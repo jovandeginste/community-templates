@@ -42,6 +42,10 @@ DEFROUTE=<%= primary %>
 <%- end -%>
 <%- if @interface.virtual? && ((!@subnet.nil? && @subnet.has_vlanid?) || @interface.vlanid.present?) -%>
 <%=   "VLAN=yes" %>
+<%-   if @interface.identifier.match(/^vlan/) -%>
+<%=      "VLAN_NAME_TYPE=VLAN_PLUS_VID_NO_PAD" %>
+<%=      "PHYSDEV=#{@interface.attached_to}" %>
+<%-   end -%>
 <%- elsif @interface.virtual? && !@subnet.nil? && !@subnet.has_vlanid? && @interface.identifier.include?(':') -%>
 <%=   "TYPE=Alias" %>
 <%- end -%>
