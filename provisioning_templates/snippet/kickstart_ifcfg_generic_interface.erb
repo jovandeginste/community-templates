@@ -20,7 +20,15 @@ BOOTPROTO="<%= @dhcp ? 'dhcp' : 'none' -%>"
 <%=   "IPV6_AUTOCONF=no" %>
 <%=   "IPV6ADDR=#{@interface.ip6}" %>
 <%-   if !@subnet6.nil? && @subnet6.gateway.present? -%>
-<%=     "IPV6_DEFAULTGW=#{@subnet6.gateway}" %><%= '%$real' if @subnet6.gateway.match(/^fe80:/) %>
+<%-
+  ipv6_defaultgw = @subnet6.gateway
+  unless @host.operatingsystem.family == 'Redhat' && @host.operatingsystem.major.to_i >= 8
+    if @subnet6.gateway.match(/^fe80:/)
+      ipv6_defaultgw += '%$real'
+    end
+  end
+-%>
+<%=     "IPV6_DEFAULTGW=#{ipv6_defaultgw}" %>
 <%-   end -%>
 <%=   "IPV6_PEERDNS=no" %>
 <%- end -%>
@@ -45,6 +53,7 @@ DEFROUTE=<%= primary %>
 <%- end -%>
 <%- if @interface.virtual? && (!@subnet.nil? && (@subnet.has_vlanid? || @interface.vlanid.present?)) -%>
 <%=   "VLAN=yes" %>
+<%=   "VLAN_ID=#{@interface.vlanid}" %>
 <%-   if @attached_to_bond -%>
 <%-     if ( @host.operatingsystem.family == 'Redhat' && @host.operatingsystem.major.to_i <= 7 ) -%>
 <%=       "NM_CONTROLLED=no" %>
@@ -54,7 +63,11 @@ DEFROUTE=<%= primary %>
 <%=     "VLAN_NAME_TYPE=VLAN_PLUS_VID_NO_PAD" %>
 <%=     "PHYSDEV=#{@interface.attached_to}" %>
 <%-     if @bonding_interfaces.include?(@interface.attached_to) -%>
-<%=       "TYPE=bonding" %>
+<%-       if @host.operatingsystem.family == 'Redhat' && @host.operatingsystem.major.to_i >= 8 -%>
+<%=         "TYPE=Vlan" %>
+<%-       else -%>
+<%=         "TYPE=bonding" %>
+<%-       end -%>
 <%-     end -%>
 <%-   end -%>
 <%- elsif @interface.virtual? && !@subnet.nil? && !@subnet.has_vlanid? && @interface.identifier.include?(':') -%>
